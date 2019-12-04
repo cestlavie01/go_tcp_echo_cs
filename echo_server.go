@@ -4,39 +4,42 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
+	"strconv"
 )
 
-const (
-	HOST = "localhost"
-	PORT = "12345"
-)
+const PORT = 12345
 
-func exitOnError(err error) {
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+func main() {
+	portStr := strconv.Itoa(PORT)
+	server, err := net.Listen("tcp", "0.0.0.0:"+portStr)
+	if server == nil {
+		panic("failed to listen:" + err.Error())
+	}
+
+	fmt.Println("Listening port:", portStr)
+
+	clients := acceptClient(server)
+	for {
+		go handleClient(<-clients)
 	}
 }
 
-func main() {
-	addr, err := net.ResolveTCPAddr("tcp", HOST+":"+PORT)
-	exitOnError(err)
+func acceptClient(listner net.Listener) chan net.Conn {
+	ch := make(chan net.Conn)
 
-	listener, err := net.ListenTCP("tcp", addr)
-	exitOnError(err)
+	go func() {
+		for {
+			client, err := listner.Accept()
+			if client == nil {
+				fmt.Println("failed to accept:", err.Error())
+			}
 
-	fmt.Println("Listening port" + PORT + "...")
-
-	for {
-		client, err := listener.Accept()
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			go handleClient(client)
+			fmt.Printf("new connection: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())
+			ch <- client
 		}
-	}
+	}()
 
+	return ch
 }
 
 func handleClient(client net.Conn) {
