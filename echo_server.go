@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"io"
 	"net"
 	"strconv"
 )
@@ -48,22 +48,17 @@ func handleClient(client net.Conn) {
 
 	fmt.Println("Connected from:", client.RemoteAddr().String())
 
+	reader := bufio.NewReader(client)
 	for {
-		buf := make([]byte, 512)
-		_, err := client.Read(buf)
-		if err == io.EOF {
-			fmt.Println("recv close from client")
-			return
-		}
-
+		line, err := reader.ReadBytes('\n')
 		if err != nil {
-			fmt.Println("read error:", err)
-			return
+			fmt.Println("failed to read from client.", err.Error())
+			break
 		}
 
-		fmt.Println(string(buf))
+		fmt.Println(string(line))
 
-		_, err = client.Write(buf)
+		_, err = client.Write(line)
 		if err != nil {
 			fmt.Println("write error:", err)
 			return
