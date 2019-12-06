@@ -1,2 +1,2 @@
 # go_tcp_echo_cs
- simple TCP echo client server
+ simple TCP echo server
